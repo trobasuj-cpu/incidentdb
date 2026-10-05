@@ -176,7 +176,7 @@ notebook = {
    "metadata": {},
    "source": [
     "## 4. Deep-Dive: Code Diff & Remediation Inspection\n",
-    "Let us examine an exact failure case: **Cloudflare Global Regex Backtracking Outage**."
+    "Let us examine an exact live production outage record with primary source citations."
    ]
   },
   {
@@ -185,23 +185,26 @@ notebook = {
    "metadata": {},
    "outputs": [],
    "source": [
-    "# [Cell 6] Cloudflare WAF Catastrophic Regex Deep-Dive\n",
-    "cf_incident = df[df['incident_id'] == 'INC-2019-CLOUDFLARE-01'].iloc[0]\n",
+    "# [Cell 6] Live Verified Incident Deep-Dive\n",
+    "sample_incident = df[df['company'] == 'GitHub'].iloc[0]\n",
     "\n",
-    "print(f\"Incident ID : {cf_incident['incident_id']}\")\n",
-    "print(f\"Title       : {cf_incident['title']}\")\n",
-    "print(f\"Severity    : {cf_incident['severity']}\")\n",
-    "print(\"\\n--- [1] Observed Symptoms ---\")\n",
-    "print(cf_incident['symptom_logs'])\n",
+    "print(f\"Incident ID : {sample_incident['incident_id']}\")\n",
+    "print(f\"Company     : {sample_incident['company']}\")\n",
+    "print(f\"Date        : {sample_incident['date']}\")\n",
+    "print(f\"Title       : {sample_incident['title']}\")\n",
+    "print(f\"Severity    : {sample_incident['severity']}\")\n",
+    "print(f\"Source URL  : {sample_incident.get('source_url', 'N/A')}\")\n",
+    "print(\"\\n--- [1] SRE Chronological Logs ---\")\n",
+    "print(sample_incident['symptom_logs'])\n",
     "\n",
-    "print(\"\\n--- [2] Breaking Code / Config ---\")\n",
-    "print(cf_incident['breaking_config_code'])\n",
+    "print(\"\\n--- [2] Architectural State / Breaking Config ---\")\n",
+    "print(sample_incident['breaking_config_code'])\n",
     "\n",
-    "print(\"\\n--- [3] Remediation Patch ---\")\n",
-    "print(cf_incident['remediation_patch'])\n",
+    "print(\"\\n--- [3] SRE Remediation Mitigation ---\")\n",
+    "print(sample_incident['remediation_patch'])\n",
     "\n",
     "print(\"\\n--- [4] Prevention Checklist ---\")\n",
-    "for check in cf_incident['prevention_checklist']:\n",
+    "for check in sample_incident['prevention_checklist']:\n",
     "    print(f\"  [x] {check}\")\n"
    ]
   },

@@ -26,6 +26,7 @@ class IncidentRecord:
     breaking_config_code: str
     remediation_patch: str
     prevention_checklist: List[str]
+    source_url: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -49,6 +50,7 @@ class IncidentRecord:
             breaking_config_code=data["breaking_config_code"],
             remediation_patch=data["remediation_patch"],
             prevention_checklist=list(data.get("prevention_checklist", [])),
+            source_url=data.get("source_url", ""),
             metadata=dict(data.get("metadata", {}))
         )
 
@@ -57,9 +59,10 @@ class IncidentRecord:
         stack_str = ", ".join(self.service_stack)
         cats_str = ", ".join(self.categories)
         checklist_str = "\n".join(f"- [ ] {item}" for item in self.prevention_checklist)
+        source_line = f" | **Source:** [{self.source_url}]({self.source_url})" if self.source_url else ""
 
         return f"""# [{self.incident_id}] {self.title}
-**Company:** {self.company} | **Date:** {self.date} | **Severity:** {self.severity}  
+**Company:** {self.company} | **Date:** {self.date} | **Severity:** {self.severity}{source_line}  
 **Technologies:** {stack_str}  
 **Categories:** {cats_str}  
 

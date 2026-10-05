@@ -174,9 +174,9 @@ class TestSearchEngineAndCLI(unittest.TestCase):
         self.assertEqual(results[0]["record"].company, "Cloudflare")
 
     def test_search_by_keyword(self):
-        results = self.engine.search(query="CrowdStrike")
+        results = self.engine.search(query="OpenAI")
         self.assertGreaterEqual(len(results), 1)
-        self.assertEqual(results[0]["record"].company, "CrowdStrike")
+        self.assertEqual(results[0]["record"].company, "OpenAI")
 
     def test_filter_by_severity(self):
         critical_results = self.engine.search(query="", severity="CRITICAL")

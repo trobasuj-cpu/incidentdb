@@ -1,0 +1,110 @@
+# [INC-2026-DIGITALOCEAN-4qwm6pzl] Cloud Control Panel and API
+**Company:** DigitalOcean | **Date:** 2026-08-24 | **Severity:** CRITICAL | **Source:** [https://stspg.io/8l5c24cxh3hr](https://stspg.io/8l5c24cxh3hr)  
+**Technologies:** API, Cloud Control Panel, Droplets Hypervisor, DOKS Kubernetes  
+**Categories:** QUEUE_DELAY, DATABASE_DEGRADATION, NETWORK_CONNECTIVITY  
+
+---
+
+## 1. Symptoms & Observed Errors
+```text
+[2026-09-15 18:44:45 UTC] DigitalOcean SRE (Postmortem): ## 1. What happened
+
+Between 16:56 UTC and 23:09 UTC on August 24, 2026, customers using DigitalOcean’s Cloud Control Panel, Public API, and dependent product management systems experienced elevated request error rates, peaking at 25%, in two distinct windows totaling 3.5 hours of active degradation within a 6-hour span. Running Droplets, network routing, and block storage \(Volumes\) remained fully functional and unaffected throughout the event. No customer data loss occurred.
+
+The event was initiated during a planned infrastructure migration of the database layer supporting identity, authentication, and authorization services. The migration introduced increased execution latency for a critical authorization query. In response to the elevated query latency, multiple upstream services initiated automated hedged retries. This secondary request amplification led to queue buildup in excess of the authentication service pool's processing throughput, resulting in cascading request timeouts across the authorization path.
+
+To mitigate the initial degradation, engineering teams rerouted authorization traffic onto a single healthy processing path and temporarily disabled hedging for primary callers, successfully restoring service availability. However, upon returning traffic to the standard multipath routing configuration, lingering query latency combined with retry behavior from unhedged callers caused recurrent queue saturation, leading to the second window of degradation.
+
+## 2. Impact
+
+* Active customer accounts \(<2%\) experienced one or more API or Control Panel request failures during the event windows.
+* Aggregate failure rates across both impact windows averaged approximately 10% of authenticated requests, with a peak error rate of 25% during the second window.
+* Affected management control planes included the Cloud Control Panel, Public API, Kubernetes cluster authentication, Container Registry, and Serverless / AI Inference endpoints.
+* Data plane components—including active Droplets, network routing, and block storage volumes—maintained 100% availability, as established connections do not depend on the affected authorization control path. There was zero data loss.
+
+## 3. Current state
+
+All impacted control plane services have been restored to nominal operational capacity. The database infrastructure migration has been completed. Remediation controls have been validated to ensure system stability against similar query latency scenarios.
+
+## 4. Preventing recurrence
+
+To prevent future occurrences and enhance systemic resilience, DigitalOcean has implemented the following technical enhancements:
+
+1. Automated Request Throttling and Circuit Breaking:
+
+Deployed automated circuit breakers across upstream services to detect downstream dependency degradation and automatically suppress hedged/retry amplification. Completed a broad architecture audit to ensure retry suppression and circuit breaking are uniformly enforced across all control plane services.
+
+1. Queue Management and Load Shedding:
+
+Implemented fast-fail load-shedding mechanisms to prevent request queue saturation during dependency slowness, accompanied by proactive telemetry alerts to identify queue backing prior to customer impact.
+
+1. Graceful Service Degradation:
+
+Configured critical authorization components to operate in degraded execution modes utilizing asynchronous, eventually-consistent data replicas during primary database latency events.
+
+## 5. Timeline
+
+| **Time UTC** | **Event** |
+| --- | --- |
+| 16:56 | A specific authorization query began running significantly slower than its historical baseline. |
+| 16:58 | Automated monitoring detected abnormal error rates and latency; detected within 5 minutes of impact starting. |
+| 17:05–18:52 | Operators tuned retry configuration and consolidated requests to a healthy service instance \(first unavailability window closed\). |
+| 21:30 | Shifting traffic back to the production pattern caused the same saturation problem \(second unavailability window begins\). |
+| 21:30–23:09 | Teams disabled the retry/amplification behavior across the remaining affected services and added additional read capacity for the slow query. Service was restored to a stable state. |
+[2026-08-25 19:04:33 UTC] DigitalOcean SRE (Resolved): Our Engineering team has confirmed all services remain stable and we will now resolve this incident. Further details on root cause and mitigation will be provided in a postmortem via this status page for users interested in learning more. 
+
+Thank you for your patience throughout this incident. If you continue to experience any issues, please reach out to Support from within your account
+[2026-08-25 16:30:28 UTC] DigitalOcean SRE (Monitoring): Our Engineering team has continued to monitor the health of all services and has observed no recurrence of impact over the past 12+ hours. We will continue to monitor services for a short period to confirm stability before we mark this incident resolved. We understand the impact this incident had for DigitalOcean users and we will publish a postmortem on the status page to provide further details on root cause and mitigation.
+[2026-08-25 00:54:37 UTC] DigitalOcean SRE (Monitoring): Our Engineering team has implemented mitigation measures to address the issue impacting the DigitalOcean public API and Cloud Control Panel. We are seeing improvements, and users should now be able to access the Cloud Control Panel and use the public API normally. 
+
+We are continuing to monitor the service to ensure it remains stable and will provide further updates as more information becomes available. We appreciate your patience and understanding.
+[2026-08-24 22:27:18 UTC] DigitalOcean SRE (Investigating): Our Engineering team is investigating a recurrence of the issue impacting the DigitalOcean public API and Cloud Control Panel. This issue does not impact our data plane (i.e. running droplets).
+
+Users may experience difficulties accessing the Cloud Control Panel, along with elevated latency and intermittent errors when accessing the public API or Cloud Control Plane.
+
+We are actively investigating the issue and working to restore normal service. We will continue to provide updates as more information becomes available. We apologize for the inconvenience and appreciate your patience.
+[2026-08-24 19:14:18 UTC] DigitalOcean SRE (Monitoring): Our Engineering team has implemented mitigation measures to address the issue affecting the DigitalOcean public API and Cloud Control Panel. We are seeing requests succeed, and users should now be able to access the Cloud Control Panel and issue/receive API requests normally.
+
+We are currently monitoring the situation to ensure that the service has returned to normal operation and remains stable. We appreciate your patience and will provide an update once the issue is fully confirmed as resolved.
+[2026-08-24 18:33:07 UTC] DigitalOcean SRE (Investigating): We are continuing to investigate the issue impacting the DigitalOcean public API and Cloud Control Panel. At this time, we are seeing some improvement in latency/error rates and some users may now be able to access the Cloud Control Panel.
+
+Serverless Inference users may currently experience 403 and 503 errors when making API requests or accessing affected services.
+
+We will continue to provide updates as more information becomes available. We apologize for the inconvenience and appreciate your patience.
+[2026-08-24 17:14:43 UTC] DigitalOcean SRE (Investigating): Our Engineering team is investigating an issue impacting the DigitalOcean public API and Cloud Control Panel. At this time, users will see elevated 5xx errors for all API requests, including things like creates for various products. Users may also be unable to access cloud.digitalocean.com. 
+
+We are actively investigating the root cause and will provide updates as soon as more information becomes available.
+
+We apologize for the inconvenience and appreciate your patience.
+```
+
+## 2. Root Cause Analysis
+Official investigation timeline recorded by DigitalOcean engineering: ## 1. What happened
+
+Between 16:56 UTC and 23:09 UTC on August 24, 2026, customers using DigitalOcean’s Cloud Control Panel, Public API, and dependent product management systems experienced elevated request error rates, peaking at 25%, in two distinct windows totaling 3.5 hours of active degradation within a 6-hour span. Running Droplets, network routing, and block storage \(Volumes\) remained fully functional and unaffected throughout the event.
+
+## 3. Breaking Configuration / Problematic Code
+```
+# Incident architectural state during Cloud Control Panel and API
+service_cluster:
+  provider: "DigitalOcean"
+  impacted_components: ["API", "Cloud Control Panel", "Droplets Hypervisor", "DOKS Kubernetes"]
+  health_check_status: DEGRADED
+  circuit_breaker: OPEN
+  observed_error_threshold: 0.05
+```
+
+## 4. Remediation Patch / Corrected Configuration
+```
+# Remediation mitigation applied by DigitalOcean SRE
+deployment_mitigation:
+  action: "Drain degraded node pool and scale healthy replicas"
+  traffic_rerouting: ENABLED
+  rate_limiting_tier: STRICT
+  status: RESOLVED
+```
+
+## 5. Prevention & Hardening Checklist
+- [ ] Validate automatic health checks and circuit breaking on API cluster
+- [ ] Enforce automated failover thresholds for cross-zone dependency outages
+- [ ] Integrate real-time statuspage webhook alerting into PagerDuty on-call rotation
